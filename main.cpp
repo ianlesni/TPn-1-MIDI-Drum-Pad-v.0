@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 //=====[Libraries]=============================================================
-#include "mbed.h"
+#include "mbed.h" 
 #include <cstdint>
 
 //=====[Defines]===============================================================
@@ -150,10 +150,10 @@ void piezoUpdate()
     piezoRead = piezoRead*3.3*1000; //Convierto la lectura en mV
     if(piezoRead  > PIEZO_THRESHOLD_mV) //Compara contra el threshold 
     {
-        ledPad = 1;
+        ledPad = LED_ON;
         piezoMax = piezoSearchMax(); //Busco el valor máximo de tensión del golpe
         piezoMaxVelocity = piezoConvertVoltToVel(piezoMax);  //Transformo a velocidad el valor máximo
-        ledPad = 0;            
+        ledPad = LED_OFF;            
         MIDISendNoteOff(instrumentNote[noteIndex]);//Apago el golpe anterior
         MIDISendNoteOn(instrumentNote[noteIndex],piezoMaxVelocity);//Mando el golpe actual
     }
