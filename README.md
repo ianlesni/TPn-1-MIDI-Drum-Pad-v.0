@@ -31,16 +31,27 @@ Por último, el tercer byte de datos es el parametro de velocity que define qué
 
 ![Velocity](https://github.com/ianlesni/TPn-1-MIDI-Drum-Pad-v.0/assets/43219235/8a8005aa-990d-452e-abca-52719e0e45f9)
 
-### Adecuación y procesamiento de la señal piezoeléctrica
+### Adecuación de la señal proveniente del transductor piezoeléctrico
 
 Para adaptar la señal a los rangos de voltaje y caracteristicas de la entrada del conversor analogico-digital(ADC) se utilizó el siguiente circuito:
 
+![Acondicionador de señal](https://github.com/ianlesni/TPn-1-MIDI-Drum-Pad-v.0/assets/43219235/6cc1c1cd-b3b7-45b0-8a60-1f4d98e5bfa7)
+
+- El diodo Schottky protege la entrada del operacional de los semiciclos negativos propios de la respuesta del transductor piezoelectrico.
+- El divisor resistivo permite mejorar el rango útil sin que recorte la salida del amplificador operacional.
+- El amplificador operacional, alimentado desde la placa de desarrollo NUCLEO-F429ZI, garantiza que la tensión de salida jamás supere los 3,3V (se mantiene incluso por debajo dado que el LM358P no es rail to rail)
+
+Por lo tanto, la señal presente en la entrada del conversor andalógico-digital se encuentra dentro de los valores tolerables.
+
+## Mediciones
 Las mediciones realizadas con el osciloscopio permitieron determinar la máxima deflexión de señal que puede interpretarse como un golpe y la forma de onda típica de la señal. Para el caso de un golpe de mediana intensidad la forma de onda arrojada por el transductor piezoeléctrico fué:
 
 ![Forma de onda típica de un golpe de mediana intensidad](https://github.com/ianlesni/TPn-1-MIDI-Drum-Pad-v.0/assets/43219235/e9d95473-bee0-4082-9fbb-da1ae85f8445)
 
+(agregar captura de golpes sucesivos)
+
 ## Analisis de amplitud
-Debbido a que la intensidad del golpe se representa en este tipo de instrumentos con el parámetro velocity, fue necesario determinar una relación entre la señal medida y dicho parámetro. El piso de ruido es de 80mV y la máxima tensión de salida obtenida fué 2Vpico. Teniendo en cuenta ese delta de tensión, se genera una ecuación para transformar el valor medido por el ADC en un valor de velocity. 
+Debbido a que la intensidad del golpe se representa en este tipo de instrumentos con el parámetro velocity, fue necesario determinar una relación entre la señal medida y dicho parámetro. El piso de ruido es de 80mV y la máxima tensión pico de salida obtenida fué 2V. Teniendo en cuenta ese delta de tensión, se genera una ecuación para transformar el valor medido por el ADC en un valor de velocity. 
 
 ## Análisis de muestreo
 La duración de la señal es 10ms, independientemente de la fuerza con la que se golpé. Luego de realizar la transforamda rápida de Fourier de una señal típica registrada por el transductor, obtuve la mayor componente en frecuencia distinguible en mi instrumento, 6,7KHz. Por criterio de Nyquist tomé una frecuencia de muestreo mayor a cinco veces la componente de mayor frecuencia de la señal a analizar, para el caso 40KHz.
@@ -48,6 +59,6 @@ Debido a que la señal alcanza su valor pico aproximadamente en 5ms, el interval
 
 ## Código bloqueante
 Un valor muy exigente de velocidad de ejecución es de 900BPM (Beats Per Minute), es decir 15 golpes por segundo, un golpe cada 66,6 ms. Por lo tanto mi sistema debe realizar la medición de amplitud, generar y enviar el mensaje MIDI antes de que llegue el próximo golpe.
-La única porción de código bloqueante es la encargada de gestionar el rebote de los pulsadores, aproximadamente 30ms. Pero cuando uno configura el sonido del pad no pretenede estar tocando simultanemtente a 900BPM. Por lo tanto, no es necesario preocuparse por esa condición bloqueante.
+La única porción de código bloqueante es la encargada de gestionar el rebote de los pulsadores, aproximadamente 30ms. Ese período bloqueante no solo es menor al minimo tiempo entre golpes considerado, sino que ,por cuestiones de usabilidad, cuando el usurio configura el sonido del pad no pretenede estar tocando simultanemtente a 900BPM. Por lo tanto, no es necesario preocuparse por esa condición bloqueante.
 
 
