@@ -156,9 +156,25 @@ typedef struct{
  *=====[Declarations (prototypes) of public functions]===============
  ********************************************************************/
 
-
+/**
+* fución que 
+* @param 
+* @return 
+*/
 void outputsInit(void);
+
+/**
+* fución que 
+* @param 
+* @return 
+*/
 void calculateSlopeIntercept(void);
+
+/**
+* fución que 
+* @param 
+* @return 
+*/
 float piezoSearchMax(void);
 
 /**
@@ -167,9 +183,20 @@ float piezoSearchMax(void);
 * @return el valor de velocity 
 */
 uint8_t piezoConvertVoltToVel (float piezoMaxValue);
+
 void MIDISendNoteOn(uint8_t note,uint8_t velocity);
 void MIDISendNoteOff(uint8_t note);
+/**
+* fución que 
+* @param 
+* @return 
+*/
 void piezoUpdate(void);
+/**
+* fución que 
+* @param 
+* @return 
+*/
 uint8_t buttonUpdate(button_t* button);
 
 /*******************************************************************
@@ -213,22 +240,22 @@ int main(void)
 }
 
 /*******************************************************************
- *=====[Implementations of public functions]===========================
+ *=====[Implementations of public functions]========================
  ********************************************************************/
 
 uint8_t buttonUpdate(button_t* button)
 {
-    button->currentState = button->alias->read();
-    if (button->currentState != button->lastState)
+    button->currentState = button->alias->read();   //Leo el estado actual del botón
+    if (button->currentState != button->lastState)  //Verifico si el estado ha cambiado
     {
-        wait_us(DEBOUNCE_DELAY_MS * 1000); 
-        if (button->currentState == button->alias->read()) //Si efectivamente se presionó
+        wait_us(DEBOUNCE_DELAY_MS * 1000);  //Espero un tiempo prudente de rebote
+        if (button->currentState == button->alias->read())  //Confirmo si realmente hubo un cambio de estado
         {
-                button->lastState = button->currentState;
-                return  button->currentState;//El boton efectivamente cambió de estado y devuelve el estado          
+                button->lastState = button->currentState;   //Actualizo el ultimo estado relevado
+                return  button->currentState;   //Devuelvo el estado relevado          
         }      
     }
-    return BUTTON_BOUNCING;//Hubo un bounce
+    return BUTTON_BOUNCING; //Devuelvo el estado de rebote
 }
 
 void outputsInit()
