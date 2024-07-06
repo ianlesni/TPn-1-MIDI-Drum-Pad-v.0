@@ -10,8 +10,8 @@
 ![Diagrama en bloques ](https://github.com/ianlesni/TPn-1-MIDI-Drum-Pad-v.0/assets/43219235/79b5c3e0-ac47-409f-8339-413e8e71b634)
 - #### Drum Pad:
 El Drum pad está coformado por un transductor piezoeléctrico (*piezo*), un circuito (*acondicionador de señal*) y un led (*ledPad*). Al golpear el pad, el transductor piezoelectrico genera una diferencia de potencial eléctrica propocional a la intensidad del golpe. Debido a la magnitud y caracteristicas de la señal, es necesario adaptarla a los rangos de voltaje y caracteristicas de la entrada del conversor analogico-digital(ADC). Para ello, se implementó un circuito acondicionador de señal que escala y ajusta la señal proveniente del transductor piezoelectrico a valores compatibles con la entrada del ADC. Además, el drum pad cuenta con un led idnicador que proporciona retroalimentación visual al usuario cada vez que se envía un comando MIDI, facilitando la comprensión de la relación entre el golpe en el pad y la generación de sonido correspondiente.
-- #### Botones:
-El sistema cuenta con dos botones (upButton y downButton) que permiten configurar el sonido asociado al golpe del drum pad. Estos botones facilitan la navegación ascendente o descendente a través de una lista predefinida en el firmware, la cual contiene con todos los sonidos disponibles para el drum pad.
+- #### Pulsadores:
+El sistema cuenta con dos pulsadores (upButton y downButton) que permiten configurar el sonido asociado al golpe del drum pad. Estos pulsadores facilitan la navegación ascendente o descendente a través de una lista predefinida en el firmware, la cual contiene con todos los sonidos disponibles para el drum pad.
 - #### PC:
 La comunicación se establece a travéz de la interfaz UART con la PC y esta utiliza los programas mecionados en la descripción del proyecto, que se encargan de interpretar y traducir el mensaje envíado por la NUCLEO-F429ZI para generar el sonido correspondiente al instrumento virtual seleccionado.
 
@@ -68,6 +68,6 @@ Debido a que la señal alcanza su valor pico en aproximadamente 5ms, el interval
 
 ## Código bloqueante
 Un valor muy exigente de velocidad de ejecución es de 900BPM (beats per minute), es decir, 15 golpes por segundo, o un golpe cada 66,6 ms. Por lo tanto, el sistema debe realizar la medición de amplitud, generar y enviar el mensaje MIDI antes de que ocurra el siguiente golpe.
-La única porción de código considerablemente bloqueante es la encargada de gestionar el rebote de los botones, que toma aproximadamente 30ms. Ese período bloqueante es menor que el mínimo tiempo entre golpes considerado, y dado que, por cuestiones de usabilidad, cuando el usurio configura el sonido del pad no se espera que toque simultanemtente a 900BPM. Por lo tanto, no es necesario preocuparse por esta condición bloqueante.
+La única porción de código considerablemente bloqueante es la encargada de gestionar el rebote de los pulsadores, que toma aproximadamente 30ms. Ese período bloqueante es menor que el mínimo tiempo entre golpes considerado, y dado que, por cuestiones de usabilidad, cuando el usurio configura el sonido del pad no se espera que toque simultanemtente a 900BPM. Por lo tanto, no es necesario preocuparse por esta condición bloqueante.
 
 

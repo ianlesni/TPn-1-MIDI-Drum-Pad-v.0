@@ -14,7 +14,7 @@
  *=====[Definiciones]==============================
  *************************************************/
 
-#define DEBOUNCE_DELAY_MS 30            /**< Tiempo de espera asociado al rebote típico de los botones */
+#define DEBOUNCE_DELAY_MS 30            /**< Tiempo de espera asociado al rebote típico de los pulsadores */
 
 #define NUMBER_OF_PIEZO_SAMPLES 400     /**< Número de total de muestras para el proceso de muestreo de la señal adquirida por el transductor piezoeléctrico */
 #define SAMPLE_FREQ_Hz 40000            /**< Frecuencia de muestreo [Hz] */
@@ -132,26 +132,26 @@ typedef enum{
 
 /*!
  * \enum BUTTON_STATE
- * \brief Enumeración de los estados de los botones.
+ * \brief Enumeración de los estados de los pulsadores.
  * 
  */
 typedef enum{
-    BUTTON_PRESSED = 1,     /**< Botón presionado */
-    BUTTON_RELEASED = 0,    /**< Boton suelto */
-    BUTTON_BOUNCING = 3     /**< Botón rebotando */
+    BUTTON_PRESSED = 1,     /**< pulsador presionado */
+    BUTTON_RELEASED = 0,    /**< pulsador suelto */
+    BUTTON_BOUNCING = 3     /**< pulsador rebotando */
 }BUTTON_STATE; 
 
 /*!
  * \struct button_t
- * \brief Estructura de un boton
+ * \brief Estructura de un pulsador
  *
- *Estructura para la representación de un boton y sus 
+ *Estructura para la representación de un pulsador y sus 
  *estados necesarios para ejecutar la rutina anti rebote
  */
 typedef struct{
-    DigitalIn* alias;       /**< Puntero a un objeto DigitalIn para implementar un botón */
-    uint8_t currentState;   /**< Estado actual del botón */
-    uint8_t lastState;      /**< Último estado conocido del botón */
+    DigitalIn* alias;       /**< Puntero a un objeto DigitalIn para implementar un pulsador */
+    uint8_t currentState;   /**< Estado actual del pulsador */
+    uint8_t lastState;      /**< Último estado conocido del pulsador */
 }button_t; 
 
 /*********************************************************************
@@ -213,12 +213,12 @@ void MIDISendNoteOff(uint8_t note);
 void piezoUpdate(void);
 
 /**
- * Actualización y gestión del estado de un botón, considerando el rebote.
+ * Actualización y gestión del estado de un pulsador, considerando el rebote.
  * 
- * Esta función actualiza el estado de un botón y realiza un algoritmo anti rebote.
+ * Esta función actualiza el estado de un pulsador y realiza un algoritmo anti rebote.
  * 
- * @param button Puntero a la estructura que representa el botón a actualizar.
- * @return Estado actual del botón después de gestionar el debounce, o `BUTTON_BOUNCING` si aún está en estado de rebote.
+ * @param button Puntero a la estructura que representa el pulsador a actualizar.
+ * @return Estado actual del pulsador después de gestionar el debounce, o `BUTTON_BOUNCING` si aún está en estado de rebote.
  */
 uint8_t buttonUpdate(button_t* button);
 
@@ -228,16 +228,16 @@ uint8_t buttonUpdate(button_t* button);
 
 int main(void)
 {
-    /** Creo los botones necesarios para configurar el 
+    /** Creo los pulsadores necesarios para configurar el 
     *  sonido del drum pad. 
-    *  Estos botones permiten navegar de manera ascendente y 
+    *  Estos pulsadores permiten navegar de manera ascendente y 
     *  descendente por el arreglo de notas de instrumentos
     *  disponibles.
     */
     DigitalIn upButton(BUTTON1);                                                //Creo un objeto DigitalIn para la navegación ascendente del arreglo de notas midi disponibles
-    button_t upButtonStruct {&upButton,BUTTON_RELEASED,BUTTON_RELEASED};        /**< Estructura asociada al botón upButton */
+    button_t upButtonStruct {&upButton,BUTTON_RELEASED,BUTTON_RELEASED};        /**< Estructura asociada al pulsador upButton */
     DigitalIn downButton(D1);                                                   //Creo un objeto DigitalIn para la navegación descendente del arreglo de notas midi disponibles
-    button_t downButtonStruct {&downButton,BUTTON_RELEASED,BUTTON_RELEASED};    /**< Estructura asociada al botón downButton  */
+    button_t downButtonStruct {&downButton,BUTTON_RELEASED,BUTTON_RELEASED};    /**< Estructura asociada al pulsador downButton  */
     
     /** Seteo las propiedades de la comuniación serie 
     *  acorde a las preferencias configuradas en el 
@@ -257,13 +257,13 @@ int main(void)
 
         piezoUpdate();                                                  //Actualizo el estado del transductor piezoeléctrico
         
-        if(buttonUpdate(&upButtonStruct) == BUTTON_PRESSED)             //Verifico si el botón upButton fué presionado
+        if(buttonUpdate(&upButtonStruct) == BUTTON_PRESSED)             //Verifico si el pulsador upButton fué presionado
         {
             noteIndex++;                                                //Incremento el indice de navegación de notas
             if (noteIndex >= numOfInstrumentNotes) noteIndex = 0;       //Controlo que el indice no se vaya de rango
         }
 
-        if(buttonUpdate(&downButtonStruct) == BUTTON_PRESSED)           //Verifico si el botón downButton fué presionado
+        if(buttonUpdate(&downButtonStruct) == BUTTON_PRESSED)           //Verifico si el pulsador downButton fué presionado
         {
             noteIndex--;                                                //Decremento el indice de navegación de notas
             if (noteIndex < 0) noteIndex = numOfInstrumentNotes - 1;    //Controlo que el indice no se vaya de rango
@@ -279,7 +279,7 @@ int main(void)
 
 uint8_t buttonUpdate(button_t* button)
 {
-    button->currentState = button->alias->read();           //Leo el estado actual del botón
+    button->currentState = button->alias->read();           //Leo el estado actual del pulsador
     if (button->currentState != button->lastState)          //Verifico si el estado ha cambiado
     {
         wait_us(DEBOUNCE_DELAY_MS * 1000);                  //Espero un tiempo prudente de rebote
