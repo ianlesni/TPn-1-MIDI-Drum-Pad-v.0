@@ -159,46 +159,67 @@ typedef struct{
  ********************************************************************/
 
 /**
-* fución que 
-* @param 
-* @return 
-*/
+ * Inicialización los dispositivos de salida.
+ * 
+ * Esta función inicializa el led del drum pad, apagándolo al inicio.
+ */
 void outputsInit(void);
 
 /**
-* fución que 
-* @param 
-* @return 
-*/
+ * Calculo de la pendiente y la ordenada al origen de la recta de conversión.
+ * 
+ * Esta función calcula la pendiente y la ordenada al origen de la recta de conversión
+ * entre voltaje y velocity. Utiliza las constantes DELTA_VEL, DELTA_VOLT, MIN_VEL y PIEZO_THRESHOLD_mV. 
+ */
 void calculateSlopeIntercept(void);
 
 /**
-* fución que 
-* @param 
-* @return 
-*/
+ * Busqueda y devolución del valor máximo del golpe registrado por el transductor piezoeléctrico.
+ * 
+ * Esta función realiza un muestreo de la señal analógica proveniente del transductor piezoeléctrico
+ * y determina el valor máximo de voltaje [mV] registrado durante el proceso de muestreo.
+ * 
+ * @return Valor máximo de voltaje [mV] registrado durante el muestreo.
+ */
 float piezoSearchMax(void);
 
 /**
-* fución que convierte la medición de tension [mV] a un valor de velocity.
-* @param piezoMaxValue valor de voltaje [mV] a convertir
-* @return valor de velocity correspondiente 
-*/
+ * Conviersión de un valor de voltaje [mV] en un valor de velocity.
+ * 
+ * Esta función calcula y convierte un valor de voltaje [mV] registrado por el transductor
+ * piezoeléctrico en un valor de celocity MIDI. El valor de velocity se calcula utilizando
+ * la pendiente y la ordenada al origen previamente calculadas (slope e intercept).
+ * 
+ * @param piezoMaxValue Valor máximo de voltaje [mV] registrado por el transductor piezoeléctrico.
+ * @return  Valor de velocity correspondiente, redondeado y ajustado dentro del rango permitido(0-127).
+ */
 uint8_t piezoConvertVoltToVel (float piezoMaxValue);
 
 void MIDISendNoteOn(uint8_t note,uint8_t velocity);
 void MIDISendNoteOff(uint8_t note);
+
 /**
-* fución que 
-* @param 
-* @return 
-*/
+ * Actualizción del estado del transductor piezoeléctrico y envío de mensajes MIDI si se detecta un golpe.
+ * 
+ * Esta función realiza las siguientes operaciones:
+ * 1- Lee el valor actual del transductor piezoeléctrico y lo convierte a [mV].
+ * 2- Compara la lectura con el umbral de activación.
+ * 3- Si el valor supera el umbral, enciende un led como indicación visual para el usuario.
+ * 4- Busca y registra el valor máximo del golpe detectado.
+ * 5- Convierte este valor máximo en un valor de velocity.
+ * 6- Envía los mensajes MIDI correspondientes para activar una nota musical con la velocidad calculada y la nota previamente definida.
+ * 7- Apaga el led para indicar la finalización del proceso de envío de mensajes MIDI.
+ */
 void piezoUpdate(void);
+
 /**
-* fución que 
-* @param button
-* @return BUTTON_STATE
-*/
+ * Actualización y gestión del estado de un botón, considerando el rebote.
+ * 
+ * Esta función actualiza el estado de un botón y realiza un algoritmo anti rebote.
+ * 
+ * @param button Puntero a la estructura que representa el botón a actualizar.
+ * @return Estado actual del botón después de gestionar el debounce, o `BUTTON_BOUNCING` si aún está en estado de rebote.
+ */
 uint8_t buttonUpdate(button_t* button);
 
 /*******************************************************************
@@ -207,7 +228,7 @@ uint8_t buttonUpdate(button_t* button);
 
 int main(void)
 {
-    /** Creo los botónes necesarios para configurar el 
+    /** Creo los botones necesarios para configurar el 
     *  sonido del drum pad. 
     *  Estos botones permiten navegar de manera ascendente y 
     *  descendente por el arreglo de notas de instrumentos
@@ -269,6 +290,7 @@ uint8_t buttonUpdate(button_t* button)
         }      
     }
     return BUTTON_BOUNCING;                                 //Devuelvo el estado de rebote
+
 }
 
 void outputsInit()
@@ -278,8 +300,8 @@ void outputsInit()
 
 void calculateSlopeIntercept()
 {
-    slope = (float)DELTA_VEL / DELTA_VOLT;                  /**< Pendiente de la curva de conversión */
-    intercept = MIN_VEL - PIEZO_THRESHOLD_mV * slope;       /**< Ordenada al origen de la curva de conversión */ 
+    slope = (float)DELTA_VEL / DELTA_VOLT;                  /**< Pendiente de la recta de conversión */
+    intercept = MIN_VEL - PIEZO_THRESHOLD_mV * slope;       /**< Ordenada al origen de la recta de conversión */ 
 }
 
 void piezoUpdate()
@@ -290,7 +312,7 @@ void piezoUpdate()
     if(piezoRead  > PIEZO_THRESHOLD_mV)                                 //Comparo la lectura en mV con el umbral de activación
     {
         ledPad = LED_ON;                                                //Enciendo el Led para confirmar que se realizó un golpe que superó el umbral de activación
-        piezoMax = piezoSearchMax();                                    //Busco el valor máximo del golpe
+        piezoMax = piezoSearchMax();                                    //Busco el valor máximo del golpe detectado
         piezoMaxVelocity = piezoConvertVoltToVel(piezoMax);             //Transformo el valor máximo en velocity
                  
         MIDISendNoteOff(instrumentNote[noteIndex]);                
