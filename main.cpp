@@ -64,7 +64,7 @@ uint8_t instrumentNote[] = {KICK,SNARE,SIDE_STICK,HI_HAT_CLOSED,HI_HAT_HALF_OPEN
                             BELL,CRASH_L,CRASH_R,CRASH_R_CHOKED,CHINA,SPLASH};
 
 typedef enum{LED_ON = 1, LED_OFF = 0}LED_STATE;
-typedef enum{BUTTON_PRESSED = 1, BUTTON_RELEASED = 0}BUTTON_STATE;
+typedef enum{BUTTON_PRESSED = 1, BUTTON_RELEASED = 0, BUTTON_BOUNCING = 3}BUTTON_STATE;
 
 typedef struct{
     DigitalIn* alias;
@@ -132,12 +132,12 @@ uint8_t buttonUpdate(button_t* button)
                 return  button->currentState;//El boton efectivamente cambió de estado y devuelve el estado          
         }      
     }
-    return 3;//Hubo un bounce
+    return BUTTON_BOUNCING;//Hubo un bounce
 }
 
 void outputsInit()
 {
-    ledPad = 0;
+    ledPad = LED_OFF;
 }
 void calculateSlopeIntercept()
 {
