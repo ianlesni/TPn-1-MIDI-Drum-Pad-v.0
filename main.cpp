@@ -21,7 +21,7 @@
 #define SAMPLE_TIME_INTERVAL_us 25      /**< Intervalo de muestreo [us] */
 
 #define MAX_VEL 127                                                 /**< Máximo valor de velocity permitido */
-#define MIN_VEL 25                                                  /**< Máximo valor de velocity permitido (para valores menores se escucha muy poco) */
+#define MIN_VEL 35                                                  /**< Máximo valor de velocity permitido (para valores menores se escucha muy poco) */
 #define DELTA_VEL (MAX_VEL - MIN_VEL)                               /**< Variacion entre el máximo y mínimo valor de velocity permitido*/
 #define PIEZO_MAX_PEAK_VOLT_mV 2000                                 /**< Máximo valór de voltaje pico [mV] generado por el transductor piezoelectrico para el circuito de adqiusición actual*/
 #define PIEZO_THRESHOLD_mV 90                                       /**< Umbral de voltaje para la detección del golpe [mv] *///Nivel por encima del piso de ruido
@@ -31,7 +31,7 @@
  *=====[Declaración e inicialización de objetos globales públicos]===
  *******************************************************************/
 
-AnalogIn piezo(A0);                                 //Creo un objeto AnalogIn para la lectura de voltaje de un transductor piezoeléctrico
+//AnalogIn piezo(A0);                                 //Creo un objeto AnalogIn para la lectura de voltaje de un transductor piezoeléctrico
 
 static DigitalOut ledPad(LED1);                     //Creo un objeto DigitalOut como led testigo de interacción con el drum pad
   
@@ -47,9 +47,30 @@ static UnbufferedSerial serialPort(USBTX, USBRX);   //Creo un objeto UnbufferedS
  */
 float slope = 0.0;                  /**< Pendiente de la recta de conversión de voltaje [mV] del transductor piezoeléctrico a velocity */
 float intercept = 0.0;              /**< Ordenada al origen de la recta de conversión de voltaje [mV] del transductor piezoeléctrico a velocity  */
-uint8_t piezoMaxVelocity = 0x64;    /**< Máximo valor de velocity registrado */
-float piezoRead = 0.0;              /**< Valor leido del transductor piezoeléctrico  */
-float piezoMax = 0.0;               /**< Máximo valor leido del transductor piezoeléctrico */
+
+/*!
+ * \enum PIEZO_STATE
+ * \brief Enumeración de los estados del transductor piezoeléctrico.
+ * 
+ */
+typedef enum{
+    PIEZO_INACTIVE = 0,     /**< El transductor no recibió ningun golpe */
+    PIEZO_ACTIVE = 1,       /**< El transductor recibió un golpe que supera el umbral */
+}PIEZO_STATE; 
+
+/*!
+ * \struct piezo_t
+ * \brief Estructura de un transductor piezoeléctrico
+ *
+ *Estructura para la representación de un transductor piezoeléctrico 
+ *y sus valores asociados
+ */
+typedef struct{
+    AnalogIn* alias;        /**< Puntero a un objeto AnalogIn para implementar un transductor */
+    uint8_t currentState;   /**< Estado actual del transductor */
+    uint8_t MaxVelocity;    /**< Máximo valor de velocity registrado */
+}piezo_t; 
+
 
 /*!
  * \enum MIDI_COMMAND
@@ -117,7 +138,7 @@ uint8_t instrumentNote[] = {
     SPLASH                 /**< Platillo Splash */
 };
 
-uint8_t numOfInstrumentNotes = 0;       /**< Numero total de notas de instrumentos disponibles */
+uint8_t numOfInstrumentNotes = 0;       /**< Número total de notas de instrumentos disponibles */
 uint8_t noteIndex = 0;                  /**< Indice para la navegacón del arreglo de notas de intrumento */
 
 /*!
@@ -181,7 +202,7 @@ void calculateSlopeIntercept(void);
  * 
  * @return Valor máximo de voltaje [mV] registrado durante el muestreo.
  */
-float piezoSearchMax(void);
+float piezoSearchMax(piezo_t* piezo);
 
 /**
  * Conviersión de un valor de voltaje [mV] en un valor de velocity.
@@ -210,7 +231,7 @@ void MIDISendNoteOff(uint8_t note);
  * 6- Envía los mensajes MIDI correspondientes para activar una nota musical con la velocidad calculada y la nota previamente definida.
  * 7- Apaga el led para indicar la finalización del proceso de envío de mensajes MIDI.
  */
-void piezoUpdate(void);
+uint8_t piezoUpdate(piezo_t* piezo);
 
 /**
  * Actualización y gestión del estado de un pulsador, considerando el rebote.
@@ -228,6 +249,9 @@ uint8_t buttonUpdate(button_t* button);
 
 int main(void)
 {
+    AnalogIn piezoA(A0);
+    piezo_t piezoAStruct{&piezoA,PIEZO_INACTIVE,0x00};
+
     /** Creo los pulsadores necesarios para configurar el 
     *  sonido del drum pad. 
     *  Estos pulsadores permiten navegar de manera ascendente y 
@@ -255,8 +279,18 @@ int main(void)
     while (true)
     {
 
-        piezoUpdate();                                                  //Actualizo el estado del transductor piezoeléctrico
+                                                          
         
+        if(piezoUpdate(&piezoAStruct) == PIEZO_ACTIVE)                              //Actualizo el estado del transductor piezoeléctrico
+        {
+            
+            MIDISendNoteOff(instrumentNote[noteIndex]);                             //Envío el mensaje de Note Off para no seguir superponiendo las notas 
+            ledPad = LED_ON;                                                        //Enciendo el Led para confirmar que se realizó un golpe que superó el umbral de activación
+            MIDISendNoteOn(instrumentNote[noteIndex],piezoAStruct.MaxVelocity);     //Envío el mensaje de Note On con respectiva velocity 
+            ledPad = LED_OFF;                                                       //Apago el Led para indicar que se envió el mensaje correspondiente
+        }
+        else{}
+
         if(buttonUpdate(&upButtonStruct) == BUTTON_PRESSED)             //Verifico si el pulsador upButton fué presionado
         {
             noteIndex++;                                                //Incremento el indice de navegación de notas
@@ -304,38 +338,42 @@ void calculateSlopeIntercept()
     intercept = MIN_VEL - PIEZO_THRESHOLD_mV * slope;       /**< Ordenada al origen de la recta de conversión */ 
 }
 
-void piezoUpdate()
+uint8_t piezoUpdate(piezo_t* piezo)
 {
-    //Ver de implementar con read_mV()
-    piezoRead = piezo.read();                                           //Tomo una lectura del transductor piezoeléctrico
+    float piezoRead = 0.0;                                              /**< Valor leido del transductor piezoeléctrico  */
+    float piezoMax = 0.0;                                               /**< Máximo valor leido del transductor piezoeléctrico */
+
+    piezoRead = piezo->alias->read();                                   //Tomo una lectura del transductor piezoeléctrico
     piezoRead = piezoRead*3.3*1000;                                     //Convierto la lectura a [mV]
+                                     
     if(piezoRead  > PIEZO_THRESHOLD_mV)                                 //Comparo la lectura en mV con el umbral de activación
     {
-        ledPad = LED_ON;                                                //Enciendo el Led para confirmar que se realizó un golpe que superó el umbral de activación
-        piezoMax = piezoSearchMax();                                    //Busco el valor máximo del golpe detectado
-        piezoMaxVelocity = piezoConvertVoltToVel(piezoMax);             //Transformo el valor máximo en velocity
+                                                    
+        piezoMax = piezoSearchMax(piezo);                                    //Busco el valor máximo del golpe detectado
+        piezo->MaxVelocity = piezoConvertVoltToVel(piezoMax);             //Transformo el valor máximo en velocity
                  
-        MIDISendNoteOff(instrumentNote[noteIndex]);                
-        MIDISendNoteOn(instrumentNote[noteIndex],piezoMaxVelocity);     //Envío el mensaje de Note On con respectiva velocity 
-        ledPad = LED_OFF;                                              //Apago el Led para indicar que se envió el mensaje correspondiente
+        piezo->currentState = PIEZO_ACTIVE;
+        return piezo->currentState;                                         
     }
-           
+    piezo->currentState = PIEZO_INACTIVE;
+    return piezo->currentState;      
 }
 
-float piezoSearchMax()
+float piezoSearchMax(piezo_t* piezo)
 {
     float piezoMaxValue = 0.0;                          /**< Valor máximo del golpe registrado por el transductor piezoeléctrico*/
     float piezoSample = 0.0;                            /**< Valor muestreado del transductor piezoeléctrico */
 
     for(int i = 0; i < NUMBER_OF_PIEZO_SAMPLES; i++)    //Realizo un muestreo de la señal analógica proveniente del transductor piezoeléctrico
     {
-        //Ver de implementar con read_mV()
-        piezoSample = piezo.read();                     //Tomo una lectura del transductor piezoeléctrico     
-        piezoSample = piezoSample*3.3*1000;             //Convierto la lectura a [mV]
+
+         piezoSample = piezo->alias->read();             //Tomo una lectura del transductor piezoeléctrico     
+         piezoSample = piezoSample*3.3*1000;             //Convierto la lectura a [mV]
 
          if(piezoSample > piezoMaxValue)                //Verifico si el nuevo valor leido es mayor al máximo valor registrado en este muestreo
         {
             piezoMaxValue = piezoSample;                //Actualizo el máximo valor registrado hasta el momento
+
         }
         wait_us(SAMPLE_TIME_INTERVAL_us);               //Genero el intervalo de tiempo entre muestras     
     }
