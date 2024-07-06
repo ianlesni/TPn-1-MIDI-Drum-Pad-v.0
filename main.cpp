@@ -31,8 +31,6 @@
  *=====[Declaración e inicialización de objetos globales públicos]===
  *******************************************************************/
 
-//AnalogIn piezo(A0);                                 //Creo un objeto AnalogIn para la lectura de voltaje de un transductor piezoeléctrico
-
 static DigitalOut ledPad(LED1);                     //Creo un objeto DigitalOut como led testigo de interacción con el drum pad
   
 static UnbufferedSerial serialPort(USBTX, USBRX);   //Creo un objeto UnbufferedSerial para realizar la comunicación serie con la PC.
@@ -71,6 +69,19 @@ typedef struct{
     uint8_t MaxVelocity;    /**< Máximo valor de velocity registrado */
 }piezo_t; 
 
+
+/*!
+ * \struct midiMessage_t
+ * \brief Estructura de un mensaje MIDI
+ *
+ *Estructura que contiene los campos necesarios para los 
+ *mensajes MIDI Note On y Note Off en channel 0
+ */
+typedef struct{
+    uint8_t command;        /**< Comando a transmitir en el mensaje por el canal 0 */
+    uint8_t note;           /**< Nota del mensaje */
+    uint8_t velocity;       /**< Parámetro velocity del mensaje */
+}midiMessage_t; 
 
 /*!
  * \enum MIDI_COMMAND
@@ -217,8 +228,23 @@ float piezoSearchMax(piezo_t* piezo);
  */
 uint8_t piezoConvertVoltToVel (float piezoMaxValue);
 
-void MIDISendNoteOn(uint8_t note,uint8_t velocity);
-void MIDISendNoteOff(uint8_t note);
+/**
+ * Transmisión a través de UART del mensaje midi de Note On
+ *
+ * Esta función permite enviar mensajes para que la nota comience a sonar en función de 
+ * los parámetros de la estructura del mensaje
+ *  @param message Puntero a la estructura que representa el mensaje.
+ */
+void midiSendNoteOn(midiMessage_t* message);
+
+/**
+ * Transmisión a través de UART del mensaje midi de Note Off
+ *
+ * Esta función permite enviar mensajes para que la nota deje de sonar en función de 
+ * los parámetros de la estructura del mensaje
+ *  @param message Puntero a la estructura que representa el mensaje.
+ */
+void midiSendNoteOff(midiMessage_t* message);
 
 /**
  * Actualizción del estado del transductor piezoeléctrico y envío de mensajes MIDI si se detecta un golpe.
@@ -245,9 +271,9 @@ uint8_t piezoUpdate(piezo_t* piezo);
  */
 uint8_t buttonUpdate(button_t* button);
 
-/*******************************************************************
+/*************************************************************************
  *=====[Main function, the program entry point after power on or reset]===
- ********************************************************************/
+ ************************************************************************/
 
 int main(void)
 {
@@ -276,6 +302,8 @@ int main(void)
     serialPort.baud(9600);
     serialPort.format(8,SerialBase::None,1);
 
+    midiMessage_t midiMessageStruct{0x00,0x00,0x00};
+
     outputsInit();                  //Inicializo el led del drum pad
     calculateSlopeIntercept();      //Calculo la pendiente y la ordenada al origen de la recta de conversion de voltaje a velocity
     
@@ -283,12 +311,14 @@ int main(void)
 
     while (true)
     {
-        if(piezoUpdate(&piezoAStruct) == PIEZO_ACTIVE)                              //Actualizo y verifico el estado del transductor piezoeléctrico
+        if(piezoUpdate(&piezoAStruct) == PIEZO_ACTIVE)                  //Actualizo y verifico el estado del transductor piezoeléctrico
         {  
-            ledPad = LED_ON;                                                        //Enciendo el Led para confirmar que se realizó un golpe que superó el umbral de activación         
-            MIDISendNoteOff(instrumentNote[noteIndex]);                             //Envío el mensaje de Note Off para no superponer notas 
-            MIDISendNoteOn(instrumentNote[noteIndex],piezoAStruct.MaxVelocity);     //Envío el mensaje de Note On con el parámetro velocity proporcional a la intensidad del golpe
-            ledPad = LED_OFF;                                                       //Apago el Led para indicar que se envió el mensaje correspondiente
+            ledPad = LED_ON;                                            //Enciendo el Led para confirmar que se realizó un golpe que superó el umbral de activación
+            midiMessageStruct.note = instrumentNote[noteIndex];         //Cargo la nota del mensaje
+            midiMessageStruct.velocity = piezoAStruct.MaxVelocity;      //Cargo la velocity del mensaje              
+            midiSendNoteOff(&midiMessageStruct);                        //Envío el mensaje de Note Off para no superponer notas 
+            midiSendNoteOn(&midiMessageStruct);                         //Envío el mensaje de Note On con el parámetro velocity proporcional a la intensidad del golpe
+            ledPad = LED_OFF;                                           //Apago el Led para indicar que se envió el mensaje correspondiente
         }
         else{}
 
@@ -350,14 +380,14 @@ uint8_t piezoUpdate(piezo_t* piezo)
     if(piezoRead  > PIEZO_THRESHOLD_mV)                                 //Comparo la lectura en mV con el umbral de activación
     {
                                                     
-        piezoMax = piezoSearchMax(piezo);                                    //Busco el valor máximo del golpe detectado
-        piezo->MaxVelocity = piezoConvertVoltToVel(piezoMax);             //Transformo el valor máximo en velocity
+        piezoMax = piezoSearchMax(piezo);                               //Busco el valor máximo del golpe detectado
+        piezo->MaxVelocity = piezoConvertVoltToVel(piezoMax);           //Transformo el valor máximo en velocity
                  
-        piezo->currentState = PIEZO_ACTIVE;
-        return piezo->currentState;                                         
+        piezo->currentState = PIEZO_ACTIVE;                             //Actualizo el estado del piezoeléctrico a activo
+        return piezo->currentState;                                     //Devuelvo el estado del transductor                  
     }
-    piezo->currentState = PIEZO_INACTIVE;
-    return piezo->currentState;      
+    piezo->currentState = PIEZO_INACTIVE;                               //Actualizo el estado del piezoeléctrico a inactivo
+    return piezo->currentState;                                         //Devuelvo el estado del transductor 
 }
 
 float piezoSearchMax(piezo_t* piezo)
@@ -367,20 +397,16 @@ float piezoSearchMax(piezo_t* piezo)
 
     for(int i = 0; i < NUMBER_OF_PIEZO_SAMPLES; i++)    //Realizo un muestreo de la señal analógica proveniente del transductor piezoeléctrico
     {
-
          piezoSample = piezo->alias->read();             //Tomo una lectura del transductor piezoeléctrico     
          piezoSample = piezoSample*3.3*1000;             //Convierto la lectura a [mV]
 
          if(piezoSample > piezoMaxValue)                //Verifico si el nuevo valor leido es mayor al máximo valor registrado en este muestreo
         {
             piezoMaxValue = piezoSample;                //Actualizo el máximo valor registrado hasta el momento
-
         }
         wait_us(SAMPLE_TIME_INTERVAL_us);               //Genero el intervalo de tiempo entre muestras     
-    }
-    
+    }  
     return piezoMaxValue;                               //Devuelvo el máximo valor de voltaje [mV] leido del golpe ejecutado
-
 }
 
 uint8_t piezoConvertVoltToVel (float piezoMaxValue)
@@ -397,20 +423,29 @@ uint8_t piezoConvertVoltToVel (float piezoMaxValue)
     return vel;                                         //Devuelvo el valor de velocity
 }   
 
-//Funciones a modificar
-void MIDISendNoteOn(uint8_t note,uint8_t velocity)
+
+void midiSendNoteOn(midiMessage_t* message)
 {
-    uint8_t command = NOTE_ON;      /**< Detailed description after the member */
-    serialPort.write(&command, 1);
-    serialPort.write(&note, 1);
-    serialPort.write(&velocity, 1); 
+    uint8_t command = NOTE_ON;                  /**< <Comando de Note On en canal 0> */
+
+    serialPort.write(&command, 1);              //Envío el comando y su canal
+    serialPort.write(&message->note, 1);        //Envío la nota       
+    serialPort.write(&message->velocity, 1);    //Envío el valor de velocity 
 }
 
-void MIDISendNoteOff(uint8_t note)
+void midiSendNoteOff(midiMessage_t* message)
 {
-    uint8_t command = NOTE_ON;      /**< Detailed description after the member */
-    uint8_t velocityOff = 0x00;
-    serialPort.write(&command, 1);
-    serialPort.write(&note, 1);
-    serialPort.write(&velocityOff, 1);
+    /** Una alternativa a enviar un mensaje con 
+    * el comando Note Off es enviar un Comando Note On
+    * con una velocity de 0x00 
+    * la funcionalidad es equivalente 
+    */
+    uint8_t command = NOTE_ON;                  
+    uint8_t velocityOff = 0x00;                 
+
+    serialPort.write(&command, 1);              //Envío el comando y su canal
+    serialPort.write(&message->note, 1);        //Envío la nota
+    serialPort.write(&velocityOff, 1);          //Envío el valor de velocity         
 }
+
+
