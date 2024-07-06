@@ -55,7 +55,7 @@ float piezoMax = 0.0;               /**< Máximo valor leido del transductor pie
  * \enum MIDI_COMMAND
  * \brief Enumeración de comandos MIDI. 
  *
- * Enumeración de los comandos necesarios para formar los mensajes MIDI.
+ * Enumeración de los comandos necesarios para formar los mensajes MIDI para el canal 0.
  */
 typedef enum{
         NOTE_ON = 0x90,     /**< Byte de comando Note On */
