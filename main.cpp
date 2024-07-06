@@ -154,8 +154,8 @@ typedef struct{
     uint8_t lastState;      /**< Último estado conocido del botón */
 }button_t; 
 
-/*******************************************************************
- *=====[Declarations (prototypes) of public functions]===============
+/*********************************************************************
+ *=====[Declaración (prototipos) de funciones públicas]===============
  ********************************************************************/
 
 /**
@@ -207,11 +207,16 @@ uint8_t buttonUpdate(button_t* button);
 
 int main(void)
 {
-    DigitalIn upButton(BUTTON1);    /**< Detailed description after the member */
-    DigitalIn downButton(D1);       /**< Detailed description after the member */
-
-    button_t upButtonStruct {&upButton,BUTTON_RELEASED,BUTTON_RELEASED};        /**< Detailed description after the member */
-    button_t downButtonStruct {&downButton,BUTTON_RELEASED,BUTTON_RELEASED};    /**< Detailed description after the member */
+    /** Creo los botónes necesarios para configurar el 
+    *  sonido del drum pad. 
+    *  Estos botones permiten navegar de manera ascendente y 
+    *  descendente por el arreglo de notas de instrumentos
+    *  disponibles.
+    */
+    DigitalIn upButton(BUTTON1);                                                //Creo un objeto DigitalIn para la navegación ascendente del arreglo de notas midi disponibles
+    button_t upButtonStruct {&upButton,BUTTON_RELEASED,BUTTON_RELEASED};        /**< Estructura asociada al botón upButton */
+    DigitalIn downButton(D1);                                                   //Creo un objeto DigitalIn para la navegación descendente del arreglo de notas midi disponibles
+    button_t downButtonStruct {&downButton,BUTTON_RELEASED,BUTTON_RELEASED};    /**< Estructura asociada al botón downButton  */
     
     /** Seteo las propiedades de la comuniación serie 
     *  acorde a las preferencias configuradas en el 
@@ -221,8 +226,9 @@ int main(void)
     serialPort.baud(9600);
     serialPort.format(8,SerialBase::None,1);
 
-    outputsInit();
-    calculateSlopeIntercept();  //Calculo la pendiente y la ordenada al origen de la recta de conversion de voltaje a velocity
+    outputsInit();                  //Inicializo el led del drum pad
+    calculateSlopeIntercept();      //Calculo la pendiente y la ordenada al origen de la recta de conversion de voltaje a velocity
+    
     uint8_t numOfInstrumentNotes = sizeof(instrumentNote) / sizeof(instrumentNote[0]);  //Calculo el número total de notas midi de instrumentos percusivos disponibles
 
     while (true)
@@ -246,8 +252,8 @@ int main(void)
 
 }
 
-/*******************************************************************
- *=====[Implementations of public functions]========================
+/*********************************************************************
+ *=====[Implementación de funciones públicas]=========================
  ********************************************************************/
 
 uint8_t buttonUpdate(button_t* button)
@@ -269,11 +275,13 @@ void outputsInit()
 {
     ledPad = LED_OFF;   //Inicializo el led del drum pad apagado
 }
+
 void calculateSlopeIntercept()
 {
     slope = (float)DELTA_VEL / DELTA_VOLT;                  /**< Pendiente de la curva de conversión */
     intercept = MIN_VEL - PIEZO_THRESHOLD_mV * slope;       /**< Ordenada al origen de la curva de conversión */ 
 }
+
 void piezoUpdate()
 {
     //Ver de implementar con read_mV()
@@ -291,6 +299,7 @@ void piezoUpdate()
     }
            
 }
+
 float piezoSearchMax()
 {
     float piezoMaxValue = 0.0;                          /**< Valor máximo del golpe registrado por el transductor piezoeléctrico*/
