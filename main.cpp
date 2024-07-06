@@ -200,6 +200,7 @@ void calculateSlopeIntercept(void);
  * Esta función realiza un muestreo de la señal analógica proveniente del transductor piezoeléctrico
  * y determina el valor máximo de voltaje [mV] registrado durante el proceso de muestreo.
  * 
+ * @param piezo Puntero a la estructura que representa el un transductor piezoeléctrico.
  * @return Valor máximo de voltaje [mV] registrado durante el muestreo.
  */
 float piezoSearchMax(piezo_t* piezo);
@@ -225,11 +226,12 @@ void MIDISendNoteOff(uint8_t note);
  * Esta función realiza las siguientes operaciones:
  * 1- Lee el valor actual del transductor piezoeléctrico y lo convierte a [mV].
  * 2- Compara la lectura con el umbral de activación.
- * 3- Si el valor supera el umbral, enciende un led como indicación visual para el usuario.
- * 4- Busca y registra el valor máximo del golpe detectado.
- * 5- Convierte este valor máximo en un valor de velocity.
- * 6- Envía los mensajes MIDI correspondientes para activar una nota musical con la velocidad calculada y la nota previamente definida.
- * 7- Apaga el led para indicar la finalización del proceso de envío de mensajes MIDI.
+ * 3- Si el valor supera el umbral, busca y registra el valor máximo del golpe detectado.
+ * 4- Convierte este valor máximo en un valor de velocity y guarda.
+ * 5- Devuelve el estado actual del transductor
+ *
+ *  @param piezo Puntero a la estructura que representa el un transductor piezoeléctrico.
+ *  @return Estado actual del transductor, `PIEZO_ACTIVE` o `PIEZO_INACTIVE` .
  */
 uint8_t piezoUpdate(piezo_t* piezo);
 
@@ -249,6 +251,9 @@ uint8_t buttonUpdate(button_t* button);
 
 int main(void)
 {
+    /** Creo el transductor piezo eléctrico necesario para
+    *  detectar el golpe sobre el drum pad y lo inicializo. 
+    */
     AnalogIn piezoA(A0);
     piezo_t piezoAStruct{&piezoA,PIEZO_INACTIVE,0x00};
 
@@ -278,15 +283,11 @@ int main(void)
 
     while (true)
     {
-
-                                                          
-        
-        if(piezoUpdate(&piezoAStruct) == PIEZO_ACTIVE)                              //Actualizo el estado del transductor piezoeléctrico
-        {
-            
-            MIDISendNoteOff(instrumentNote[noteIndex]);                             //Envío el mensaje de Note Off para no seguir superponiendo las notas 
-            ledPad = LED_ON;                                                        //Enciendo el Led para confirmar que se realizó un golpe que superó el umbral de activación
-            MIDISendNoteOn(instrumentNote[noteIndex],piezoAStruct.MaxVelocity);     //Envío el mensaje de Note On con respectiva velocity 
+        if(piezoUpdate(&piezoAStruct) == PIEZO_ACTIVE)                              //Actualizo y verifico el estado del transductor piezoeléctrico
+        {  
+            ledPad = LED_ON;                                                        //Enciendo el Led para confirmar que se realizó un golpe que superó el umbral de activación         
+            MIDISendNoteOff(instrumentNote[noteIndex]);                             //Envío el mensaje de Note Off para no superponer notas 
+            MIDISendNoteOn(instrumentNote[noteIndex],piezoAStruct.MaxVelocity);     //Envío el mensaje de Note On con el parámetro velocity proporcional a la intensidad del golpe
             ledPad = LED_OFF;                                                       //Apago el Led para indicar que se envió el mensaje correspondiente
         }
         else{}
