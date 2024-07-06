@@ -9,4 +9,8 @@
 ### Diagrama en bloques
 ![Diagrama en bloques ](https://github.com/ianlesni/TPn-1-MIDI-Drum-Pad-v.0/assets/43219235/79b5c3e0-ac47-409f-8339-413e8e71b634)
 #### Drum Pad:
-El Drum pad está coformado por un transductor piezoeléctrico (*piezo*), un circuito (*acondicionador de señal*) y un led (*ledPad*). Al golpear el pad, el transductor piezoelectrico genera una diferencia de potencial propocional a la magnitud de la deformación
+El Drum pad está coformado por un transductor piezoeléctrico (*piezo*), un circuito (*acondicionador de señal*) y un led (*ledPad*). Al golpear el pad, el transductor piezoelectrico genera una diferencia de potencial eléctrica propocional a la intensidad del golpe. Debido a la magnitud y caracteristicas de la señal, es necesario adaptarla a los rangos de voltaje y caracteristicas de la entrada del conversor analogico-digital(ADC). Para ello, se implementó un circuito acondicionador de señal que escala y ajusta la señal proveniente del transductor piezoelectrico a valores compatibles con la entrada del ADC. Además, el drum pad cuenta con un led idnicador que proporciona retroalimentación visual al usuario cada vez que se envía un comando MIDI, facilitando la comprensión de la relación entre el golpe en el pad y la generación de sonido correspondiente.
+#### Botones:
+El sistema cuenta con dos botones (upButton y downButton) que permiten configurar el sonido asociado al golpe del drum pad. Estos botones facilitan la navegación ascendente o descendente a través de una lista predefinida en el firmware, la cual contiene con todos los sonidos disponibles para el drum pad.
+#### PC:
+La comunicación con la PC se establece a travéz de la interfaz UART. El sistema utiliza los programas mecionados en la descripción del proyecto, que se encargan de interpretar y traducir el mensaje envíado por la NUCLEO-F429ZI para generar el sonido correspondiente al instrumento virtual seleccionado.
