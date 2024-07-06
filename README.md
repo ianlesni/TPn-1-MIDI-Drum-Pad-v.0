@@ -14,3 +14,8 @@ El Drum pad está coformado por un transductor piezoeléctrico (*piezo*), un cir
 El sistema cuenta con dos botones (upButton y downButton) que permiten configurar el sonido asociado al golpe del drum pad. Estos botones facilitan la navegación ascendente o descendente a través de una lista predefinida en el firmware, la cual contiene con todos los sonidos disponibles para el drum pad.
 #### PC:
 La comunicación con la PC se establece a travéz de la interfaz UART. El sistema utiliza los programas mecionados en la descripción del proyecto, que se encargan de interpretar y traducir el mensaje envíado por la NUCLEO-F429ZI para generar el sonido correspondiente al instrumento virtual seleccionado.
+
+### MIDI
+MIDI es un acrónimo para "Musical Instrumen Digital Interface". Es principalmente una especificación para conectar y controlar instrumentos musicales electrónicos. La especificación está propiamente detallada en el documento "MIDI 1.0 DETAILED SPECIFICATION" (disponible en https://midi.org/midi-1-0-detailed-specification).
+En este proyecto es un controlador MIDI que envían dos tipos de mensajes MIDI,Note On y Note Off. Ambos mensajes están compuestos por tres bytes:
+
