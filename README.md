@@ -1,5 +1,5 @@
 # MIDI Drum Pad v.0
-## 🚧 En Construcción 🚧
+
 ### Alumno: Ian Lesnianski
 ## Objetivo: Diseño e implementación de un dispositivo MIDI para controlar instrumentos percusivos virtuales a partir de un transductor piezoeléctrico
 ### Descripción
