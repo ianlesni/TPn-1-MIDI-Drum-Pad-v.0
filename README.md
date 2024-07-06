@@ -50,7 +50,9 @@ Las mediciones realizadas con el osciloscopio permitieron determinar la máxima 
 
 ![Forma de onda típica de un golpe de mediana intensidad](https://github.com/ianlesni/TPn-1-MIDI-Drum-Pad-v.0/assets/43219235/e9d95473-bee0-4082-9fbb-da1ae85f8445)
 
-(agregar captura de golpes sucesivos)
+En la siguiente captura puede observarse un caso de multiples golpes consecutivos:
+
+![Multiples golpes](https://github.com/ianlesni/TPn-1-MIDI-Drum-Pad-v.0/assets/43219235/159a578a-5959-40db-931a-65bbf495b904)
 
 ## Analisis de amplitud
 Debbido a que la intensidad del golpe se representa en este tipo de instrumentos con el parámetro velocity, fue necesario determinar una relación entre la señal medida y dicho parámetro. El piso de ruido es de 80mV y la máxima tensión pico de salida obtenida fué 2V. Teniendo en cuenta ese delta de tensión, se genera una ecuación para transformar el valor medido por el ADC en un valor de velocity. 
@@ -61,6 +63,6 @@ Debido a que la señal alcanza su valor pico aproximadamente en 5ms, el interval
 
 ## Código bloqueante
 Un valor muy exigente de velocidad de ejecución es de 900BPM (Beats Per Minute), es decir 15 golpes por segundo, un golpe cada 66,6 ms. Por lo tanto mi sistema debe realizar la medición de amplitud, generar y enviar el mensaje MIDI antes de que llegue el próximo golpe.
-La única porción de código bloqueante es la encargada de gestionar el rebote de los pulsadores, aproximadamente 30ms. Ese período bloqueante no solo es menor al minimo tiempo entre golpes considerado, sino que ,por cuestiones de usabilidad, cuando el usurio configura el sonido del pad no pretenede estar tocando simultanemtente a 900BPM. Por lo tanto, no es necesario preocuparse por esa condición bloqueante.
+La única porción de código considerablemente bloqueante es la encargada de gestionar el rebote de los pulsadores, aproximadamente 30ms. Ese período bloqueante no solo es menor al minimo tiempo entre golpes considerado, sino que ,por cuestiones de usabilidad, cuando el usurio configura el sonido del pad no pretenede estar tocando simultanemtente a 900BPM. Por lo tanto, no es necesario preocuparse por esa condición bloqueante.
 
 
