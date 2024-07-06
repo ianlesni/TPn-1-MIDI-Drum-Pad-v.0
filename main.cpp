@@ -92,8 +92,9 @@ uint8_t noteIndex = 0; /**< Detailed description after the member */
 /*!
  * \brief Arreglo que contiene las notas de diferentes instrumentos.
  *
- * Este arreglo `instrumentNote` almacena valores que representan distintas notas de instrumentos
- * utilizados en un sistema de percusión. Cada valor corresponde a una constante que representa
+ * Este arreglo `instrumentNote` almacena valores que representan distintas notas midi para 
+ * generar sonidos de instrumentos de percusión.
+ * Cada valor corresponde a una constante que representa
  * una nota de un instrumento específico.
  */
 uint8_t instrumentNote[] = {
