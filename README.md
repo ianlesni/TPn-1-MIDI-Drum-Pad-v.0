@@ -1,5 +1,5 @@
 # MIDI Drum Pad v.0
-
+## 🚧 En Construcción 🚧
 ### Alumno: Ian Lesnianski
 ## Objetivo: Diseño e implementación de un dispositivo MIDI para controlar instrumentos percusivos virtuales a partir de un transductor piezoeléctrico
 ### Descripción
@@ -17,5 +17,37 @@ La comunicación con la PC se establece a travéz de la interfaz UART. El sistem
 
 ### MIDI
 MIDI es un acrónimo para "Musical Instrumen Digital Interface". Es principalmente una especificación para conectar y controlar instrumentos musicales electrónicos. La especificación está propiamente detallada en el documento "MIDI 1.0 DETAILED SPECIFICATION" (disponible en https://midi.org/midi-1-0-detailed-specification).
-En este proyecto es un controlador MIDI que envían dos tipos de mensajes MIDI,Note On y Note Off. Ambos mensajes están compuestos por tres bytes:
+En este proyecto el controlador MIDI envían solamente dos tipos de mensajes MIDI. Un mensaje es el encargado de hacer sonar una nota y el otro es el encargado de apagarla.
+Ambos mensajes están compuestos por tres bytes:
+
+![ejemplo mensaje MIDI](https://github.com/ianlesni/TPn-1-MIDI-Drum-Pad-v.0/assets/43219235/55e81f52-99b3-476d-929b-04a91e87af98)
+
+El primer byte de status se define con el comando Note On = 0x9 o Note Off = 0x8 y el canal MIDI. En el caso de este desarrollo un único canal es suficiente para transmitir la información requerida para la función especifica de ser un instrumento percusivo. Se adoptó por simplicidad el MIDI CH = 0x0.
+Cada vez que se golpea el drum pad se genera un mensaje de Note On. A qué suena ese golpe lo define el segundo byte de datos, la ""nota"" de ese mensaje MIDI. Esa nota no es una nota musical, es un número que representa un instrumento percusivo:
+
+![Mapeo de notas midi](https://github.com/ianlesni/TPn-1-MIDI-Drum-Pad-v.0/assets/43219235/2c08b594-ac7b-4a3d-b11f-0a8a383687f4)
+
+Por último, el tercer byte de datos es el parametro de velocity que define qué tan fuerte suena el instrumento virtual.En los intrumentos percusivos se asocia a la intensidad del golpe. Este valor se calcula a partir de la medición de la entrada conectada al transductor piezoeléctrico. La diferencia de potencial medida por el ADC se convierte en un valor digiral, el cual se escala para producir un número en dentro dle rango de 0 a 127, correspondiente al parámetro velocity del protocolo MIDI:
+
+![Velocity](https://github.com/ianlesni/TPn-1-MIDI-Drum-Pad-v.0/assets/43219235/8a8005aa-990d-452e-abca-52719e0e45f9)
+
+### Adecuación y procesamiento de la señal piezoeléctrica
+
+Para adaptar la señal a los rangos de voltaje y caracteristicas de la entrada del conversor analogico-digital(ADC) se utilizó el siguiente circuito:
+
+Las mediciones realizadas con el osciloscopio permitieron determinar la máxima deflexión de señal que puede interpretarse como un golpe y la forma de onda típica de la señal. Para el caso de un golpe de mediana intensidad la forma de onda arrojada por el transductor piezoeléctrico fué:
+
+![Forma de onda típica de un golpe de mediana intensidad](https://github.com/ianlesni/TPn-1-MIDI-Drum-Pad-v.0/assets/43219235/e9d95473-bee0-4082-9fbb-da1ae85f8445)
+
+## Analisis de amplitud
+Debbido a que la intensidad del golpe se representa en este tipo de instrumentos con el parámetro velocity, fue necesario determinar una relación entre la señal medida y dicho parámetro. El piso de ruido es de 80mV y la máxima tensión de salida obtenida fué 2Vpico. Teniendo en cuenta ese delta de tensión, se genera una ecuación para transformar el valor medido por el ADC en un valor de velocity. 
+
+## Análisis de muestreo
+La duración de la señal es 10ms, independientemente de la fuerza con la que se golpé. Luego de realizar la transforamda rápida de Fourier de una señal típica registrada por el transductor, obtuve la mayor componente en frecuencia distinguible en mi instrumento, 6,7KHz. Por criterio de Nyquist tomé una frecuencia de muestreo mayor a cinco veces la componente de mayor frecuencia de la señal a analizar, para el caso 40KHz.
+Debido a que la señal alcanza su valor pico aproximadamente en 5ms, el intervalo entre muestras para llegar a esa frecuencia de meustreo es de 25us. 
+
+## Código bloqueante
+Un valor muy exigente de velocidad de ejecución es de 900BPM (Beats Per Minute), es decir 15 golpes por segundo, un golpe cada 66,6 ms. Por lo tanto mi sistema debe realizar la medición de amplitud, generar y enviar el mensaje MIDI antes de que llegue el próximo golpe.
+La única porción de código bloqueante es la encargada de gestionar el rebote de los pulsadores, aproximadamente 30ms. Pero cuando uno configura el sonido del pad no pretenede estar tocando simultanemtente a 900BPM. Por lo tanto, no es necesario preocuparse por esa condición bloqueante.
+
 
