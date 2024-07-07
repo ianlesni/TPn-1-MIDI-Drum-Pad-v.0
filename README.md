@@ -2,6 +2,10 @@
 
 ### Alumno: Ian Lesnianski
 ## Objetivo: Diseño e implementación de un dispositivo MIDI para controlar instrumentos percusivos virtuales a partir de un transductor piezoeléctrico
+### Video demostrativo
+
+[![Alt text](https://img.youtube.com/vi/TNhxJsQY0_c/0.jpg)](https://www.youtube.com/watch?v=TNhxJsQY0_c)
+
 ### Descripción
   El sistema consiste en un dispositivo que captura la información de una acción musical mediante un transductor piezoeléctrico integrado en un *drum pad*. Este transductor convierte la deformación mecánica generada por un golpe en una señal eléctrica, la cual es procesada y transformada en un mensaje MIDI según el estándar MIDI. Estos mensajes se envían a través de una interfaz UART hacia una PC y son recibidos por ésta en el puerto COM. El software Hairless-MIDI (disponible en https://projectgus.github.io/hairless-midiserial/) interpreta los bytes de datos enviados desde la placa NUCLEO-429FZI como mensajes MIDI y los reenvía a un puerto MIDI de salida virtual, el cual pertenece al mismo software.
   
