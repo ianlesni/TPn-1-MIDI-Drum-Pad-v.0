@@ -9,6 +9,7 @@
 
 #include "mbed.h" 
 #include <cstdint>
+#include "display.h"
 
  /*************************************************
  *=====[Definiciones]==============================
@@ -21,9 +22,9 @@
 #define SAMPLE_TIME_INTERVAL_us 25      /**< Intervalo de muestreo [us] */
 
 #define MAX_VEL 127                                                 /**< Máximo valor de velocity permitido */
-#define MIN_VEL 35                                                  /**< Máximo valor de velocity permitido (para valores menores se escucha muy poco) */
+#define MIN_VEL 30                                                  /**< Máximo valor de velocity permitido (para valores menores se escucha muy poco) */
 #define DELTA_VEL (MAX_VEL - MIN_VEL)                               /**< Variacion entre el máximo y mínimo valor de velocity permitido*/
-#define PIEZO_MAX_PEAK_VOLT_mV 2000                                 /**< Máximo valór de voltaje pico [mV] generado por el transductor piezoelectrico para el circuito de adqiusición actual*/
+#define PIEZO_MAX_PEAK_VOLT_mV 2500                                 /**< Máximo valór de voltaje pico [mV] generado por el transductor piezoelectrico para el circuito de adqiusición actual*/
 #define PIEZO_THRESHOLD_mV 90                                       /**< Umbral de voltaje para la detección del golpe [mv] *///Nivel por encima del piso de ruido
 #define DELTA_VOLT (PIEZO_MAX_PEAK_VOLT_mV - PIEZO_THRESHOLD_mV)    /**< Variación entre el valor máximo y mínimo de voltaje registrado por el transductor piezoelectrico*/
 
@@ -308,6 +309,10 @@ int main(void)
     calculateSlopeIntercept();      //Calculo la pendiente y la ordenada al origen de la recta de conversion de voltaje a velocity
     
     uint8_t numOfInstrumentNotes = sizeof(instrumentNote) / sizeof(instrumentNote[0]);  //Calculo el número total de notas midi de instrumentos percusivos disponibles
+
+    displayInit( DISPLAY_CONNECTION_I2C_PCF8574_IO_EXPANDER );
+    displayCharPositionWrite ( 0,0 );
+    displayStringWrite( "MIDI Drum Pad v0" );
 
     while (true)
     {
